@@ -7,8 +7,8 @@ Outputs: Number of emails to read and the next email if NEXT command and COUNT c
 Collaborators: Gemini
 Other sources: Gemini
 Creation date: 9/15/2026 5:00PM
-Revision date: 9/16/2026 9:30PM
-Revisions: add line-by-line comments
+Revision date: 9/17/2026 8:09PM
+Revisions: implemented iterative heapify, added error handling for empty parameters
 */
 
 /*
@@ -91,29 +91,38 @@ void swap(Email *a, Email *b) {
     *b = temp;       // Overwrite 'b' with the temporary variable
 }
 
-// Function to bubble up an email to maintain max-heap properties
+// Function to "bubble up" an email to maintain max-heap properties
 void heapify_up(MaxHeap *heap, int index) {
-    if (index && compare_emails(heap->list[index], heap->list[(index - 1) / 2]) > 0) { // If current > parent
-        swap(&heap->list[index], &heap->list[(index - 1) / 2]);                        // Swap with parent
-        heapify_up(heap, (index - 1) / 2);                                             // Recursively bubble up
+    while (index > 0) {                         // loop when index is larger than 0
+        int parent = (index - 1) / 2;           // parent expression
+        if (compare_emails(heap->list[index], heap->list[parent]) <= 0) {   // when index is smaller than parent
+            break;                                                          // break out from loop
+        }
+        swap(&heap->list[index], &heap->list[parent]);                      // swap current index when it is larger than parent 
+        index = parent;                                                     // the current index is now assigned to parent index
     }
 }
 
-// Function to trickle down an email to maintain max-heap properties
+// Function to "trickle down" an email to maintain max-heap properties
 void heapify_down(MaxHeap *heap, int index) {
-    int largest = index;       // Assume current node is the largest
-    int left = 2 * index + 1;  // Calculate index of left child
-    int right = 2 * index + 2; // Calculate index of right child
+    while (1) {                                                             // Continues checking children until the heap property is restored.
+        int largest = index;                                                // current index assigned to largest            
+        int left = 2 * index + 1;                                           // left child expression
+        int right = 2 * index + 2;                                          // right child expression
 
-    if (left < heap->size && compare_emails(heap->list[left], heap->list[largest]) > 0) // Compare with left child
-        largest = left;                                                                 // Update largest if left is greater
+        if (left < heap->size && compare_emails(heap->list[left], heap->list[largest]) > 0) {       // if left child value has high priority than current index value
+            largest = left;         // Moves largest to left child
+        }                                                                 
 
-    if (right < heap->size && compare_emails(heap->list[right], heap->list[largest]) > 0) // Compare with right child
-        largest = right;                                                                  // Update largest if right is greater
+        if (right < heap->size && compare_emails(heap->list[right], heap->list[largest]) > 0) {     // if left child value has high priority than current index value
+            largest = right;        // Moves largest to right child
+        }                                                                  
 
-    if (largest != index) {                                  // If largest changed from current node
-        swap(&heap->list[index], &heap->list[largest]);      // Swap current node with the largest child
-        heapify_down(heap, largest);                         // Recursively trickle down from new position
+        if (largest == index) {     // Checks whether the current element is already the highest-priority element among its children.
+            break;                  // Stops the loop because the MaxHeap property has been restored.
+        }                                                    
+        swap(&heap->list[index], &heap->list[largest]);      // Swaps the current element with the highest-priority child.
+        index = largest;                                     // Moves the current index downward to the child's position.
     }
 }
 
@@ -148,14 +157,20 @@ int main() {
         if (strlen(line) == 0) continue;       // Skip empty lines
 
         if (strncmp(line, "EMAIL ", 6) == 0) { // Command check: EMAIL
-            Email new_email;                   // Declare a new email struct
             char *content = line + 6;          // Pointer to content skipping "EMAIL "
+            trim_whitespace(content);          // remove whitespaces in contents of email
+            
+            if (strlen(content) == 0) {        // check if content is empty
+                fprintf(stderr, "Error: EMAIL command supplied with zero parameters.\n");   // print the error message to user
+                continue;                      // then continue to run the loop
+            }
             
             char *cat_ptr = strtok(content, ","); // Extract category up to first comma
             char *subj_ptr = strtok(NULL, ",");   // Extract subject up to second comma
             char *date_ptr = strtok(NULL, "");    // Extract date (the remainder of the line)
 
             if (cat_ptr && subj_ptr && date_ptr) { // Verify all three parts exist
+                Email new_email;                   // Declare a new email struct
                 strcpy(new_email.category, cat_ptr); // Copy parsed category
                 strcpy(new_email.subject, subj_ptr); // Copy parsed subject
                 strcpy(new_email.date, date_ptr);    // Copy parsed date
