@@ -5,10 +5,10 @@ Brief description: Email Priority Program that has an hierarchical order from mo
 Inputs: multiple lines of commands (EMAIL, NEXT, READ, COUNT) with their respective parameters
 Outputs: Number of emails to read and the next email if NEXT command and COUNT command are called
 Collaborators: Chatgpt
-Other sources: Chatgpt
+Other sources: Chatgpt, Gemini
 Creation date: 9/15/2026 6:00PM
 Revision date: 9/16/2026 10:16AM
-Revisions: add line by line comments
+Revisions: edit some comments
 */
 
 #include <stdio.h>                           // Includes standard input/output functions such as printf() and fgets().
@@ -54,12 +54,12 @@ int dateValue(const char *date) {                            // Defines a functi
 }                            // Ends the dateValue() function.
 
 /* Determine whether email a has a higher priority than email b. */
-int higherPriority(Email a, Email b) {                           // Defines a function that determines which of two emails has higher priority.
+int higherPriority(Email a, Email b) {                       // Defines a function that determines which of two emails has higher priority.
     if (a.priority != b.priority)                            // Checks whether the sender priorities are different.
-        return a.priority > b.priority;                              // Returns true when email a has a higher sender priority than email b.
+        return a.priority > b.priority;                      // Returns true when email a has a higher sender priority than email b.
     /* If sender priority is the same, newest date comes first. */
     return dateValue(a.date) > dateValue(b.date);                            // If priorities match, returns true when email a has the newer date.
-}                            // Ends the higherPriority() function.
+}                          
 
 /* Swap two emails. */
 void swapEmails(Email *a, Email *b) {                            // Defines a function that swaps two Email structures.
@@ -74,10 +74,10 @@ void initHeap(MaxHeap *heap) {                           // Defines a function t
     if (heap->items == NULL) {                           // Checks whether the memory allocation failed.
         fprintf(stderr, "Memory allocation failed.\n");                              // Prints an error message to the standard error stream.
         exit(EXIT_FAILURE);                              // Stops the program because the heap could not be created.
-    }                            // Ends the memory allocation failure check.
-    heap->size = 0;                              // Sets the initial number of emails to zero.
+    }                                                    // Ends the memory allocation failure check.
+    heap->size = 0;                                      // Sets the initial number of emails to zero.
     heap->capacity = INITIAL_CAPACITY;                           // Sets the initial heap capacity to 16 emails.
-}                            // Ends the initHeap() function.
+}                         
 
 /* Increase heap capacity when necessary. */
 void resizeHeap(MaxHeap *heap) {                             // Defines a function that increases the heap's storage capacity.
@@ -96,11 +96,11 @@ void heapifyUp(MaxHeap *heap, int index) {                           // Defines 
     while (index > 0) {                              // Continues while the current element is not the root.
         int parent = (index - 1) / 2;                            // Calculates the array index of the current element's parent.
         if (!higherPriority(heap->items[index], heap->items[parent]))                            // Checks whether the current element already belongs below its parent.
-            break;                           // Stops the loop if the parent already has equal or higher priority.
+            break;                                   // Stops the loop if the parent already has equal or higher priority.
         swapEmails(&heap->items[index], &heap->items[parent]);                           // Swaps the current email with its parent.
         index = parent;                              // Moves the current index upward to the parent's position.
-    }                            // Ends the loop that moves the email upward.
-}                            // Ends the heapifyUp() function.
+    }                                                // Ends the loop that moves the email upward.
+}                         
 
 /* Insert an email into the MaxHeap. */
 void insertHeap(MaxHeap *heap, Email email) {                    // Defines a function that inserts a new email into the MaxHeap.
@@ -113,7 +113,7 @@ void insertHeap(MaxHeap *heap, Email email) {                    // Defines a fu
 
 /* Restore the MaxHeap property downward after removal. */
 void heapifyDown(MaxHeap *heap, int index) {                             // Defines a function that restores the MaxHeap property downward.
-    while (1) {                              // Continues checking children until the heap property is restored.
+    while (1) {                                              // Continues checking children until the heap property is restored.
         int left = 2 * index + 1;                            // Calculates the array index of the current node's left child.
         int right = 2 * index + 2;                           // Calculates the array index of the current node's right child.
         int largest = index;                             // Initially assumes the current node has the highest priority.
@@ -122,10 +122,10 @@ void heapifyDown(MaxHeap *heap, int index) {                             // Defi
         if (right < heap->size && higherPriority(heap->items[right], heap->items[largest]))                              // Checks whether the right child exists and has higher priority than the current largest.
             largest = right;                             // Changes largest to the right child's index.
         if (largest == index)                            // Checks whether the current element is already the highest-priority element among its children.
-            break;                           // Stops the loop because the MaxHeap property has been restored.
+            break;                                       // Stops the loop because the MaxHeap property has been restored.
         swapEmails(&heap->items[index], &heap->items[largest]);                              // Swaps the current element with the highest-priority child.
-        index = largest;                             // Moves the current index downward to the child's position.
-    }                            // Ends the heapify-down loop.
+        index = largest;                                 // Moves the current index downward to the child's position.
+    }                        
 }   
 
 /* Return the highest-priority email without removing it. */
@@ -134,14 +134,14 @@ Email peekHeap(MaxHeap *heap) {                              // Defines a functi
 }                            // Ends the peekHeap() function.
 
 /* Remove the highest-priority email from the MaxHeap. */
-Email extractMax(MaxHeap *heap) {                            // Defines a function that removes and returns the highest-priority email.
-    Email result = heap->items[0];                           // Saves the root email so it can be returned later.
-    heap->size--;                            // Decreases the heap size because the highest-priority email is being removed.
-    if (heap->size > 0) {                            // Checks whether there are still emails remaining in the heap.
-        heap->items[0] = heap->items[heap->size];                            // Moves the last email into the root position.
+Email extractMax(MaxHeap *heap) {                        // Defines a function that removes and returns the highest-priority email.
+    Email result = heap->items[0];                       // Saves the root email so it can be returned later.
+    heap->size--;                                        // Decreases the heap size because the highest-priority email is being removed.
+    if (heap->size > 0) {                                // Checks whether there are still emails remaining in the heap.
+        heap->items[0] = heap->items[heap->size];        // Moves the last email into the root position.
         heapifyDown(heap, 0);                            // Restores the MaxHeap property starting from the root.
-    }                            // Ends the check for remaining emails.
-    return result;                           // Returns the email that was removed from the heap.
+    }                                           // Ends the check for remaining emails.
+    return result;                              // Returns the email that was removed from the heap.
 }            
 
 /* Free the memory used by the MaxHeap. */
@@ -197,25 +197,25 @@ int main(void) {                             // Defines the main function where 
         trim(line);                              // Removes the newline and unnecessary whitespace from the input line.
         if (strncmp(line, "EMAIL ", 6) == 0) {                           // Checks whether the current command begins with "EMAIL ".
             processEmail(&heap, line);                           // Processes the EMAIL command and inserts the email into the heap.
-        }                            // Ends the EMAIL command condition.
-        else if (strcmp(line, "NEXT") == 0) {                            // Checks whether the current command is NEXT.
+        }                         
+        else if (strcmp(line, "NEXT") == 0) {                // Checks whether the current command is NEXT.
             if (heap.size > 0) {                             // Checks whether there is at least one unread email.
-                Email next = peekHeap(&heap);                            // Gets the highest-priority email without removing it.
+                Email next = peekHeap(&heap);                // Gets the highest-priority email without removing it.
                 printf("Next email:\n");                             // Prints the required first line of NEXT output.
-                printf("Sender: %s\n", next.sender);                             // Prints the sender category of the next email.
-                printf("Subject: %s\n", next.subject);                           // Prints the subject line of the next email.
-                printf("Date: %s\n", next.date);                             // Prints the date of the next email.
-            }                            // Ends the check for available emails.
-        }                            // Ends the NEXT command condition.
+                printf("Sender: %s\n", next.sender);                 // Prints the sender category of the next email.
+                printf("Subject: %s\n", next.subject);               // Prints the subject line of the next email.
+                printf("Date: %s\n", next.date);                     // Prints the date of the next email.
+            }                           
+        }                       
         else if (strcmp(line, "READ") == 0) {                            // Checks whether the current command is READ.
             if (heap.size > 0) {                             // Checks whether there is at least one unread email.
                 extractMax(&heap);                           // Removes the highest-priority email from the heap.
-            }                            // Ends the check for available emails.
-        }                            // Ends the READ command condition.
+            }                          
+        }                        
         else if (strcmp(line, "COUNT") == 0) {                           // Checks whether the current command is COUNT.
             printf("There are %d emails to read.\n", heap.size);                             // Prints the current number of unread emails.
-        }                            // Ends the COUNT command condition.
-    }                            // Ends the loop that reads commands from standard input.
+        }                                          
+    }                                                // Ends the loop that reads commands from standard input.
     destroyHeap(&heap);                              // Frees all dynamically allocated memory before the program ends.
     return 0;                            // Indicates that the program completed successfully.
 }
