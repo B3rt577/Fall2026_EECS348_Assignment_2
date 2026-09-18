@@ -7,8 +7,8 @@ Outputs: Number of emails to read and the next email if NEXT command and COUNT c
 Collaborators: Gemini
 Other sources: Gemini
 Creation date: 9/15/2026 5:00PM
-Revision date: 9/17/2026 8:09PM
-Revisions: implemented iterative heapify, added error handling for empty parameters
+Revision date: 9/17/2026 8:59PM
+Revisions: debug EMAIL parsing method
 */
 
 /*
@@ -146,6 +146,59 @@ Email extract_max(MaxHeap *heap) {
     return max_email;                           // Return the extracted email
 }
 
+// Seperated function to handle the entire EMAIL command processing
+void process_email_command(MaxHeap *heap, char *line) {
+    // If the string is exactly 5 characters, all parameters (and trailing spaces) are missing
+    if (strlen(line) == 5) {
+        fprintf(stderr, "Error: EMAIL command supplied with zero parameters.\n");
+        return;
+    }
+    
+    // Ensure there is actually a space after EMAIL (prevents matching invalid commands like "EMAILBOX")
+    if (line[5] != ' ') {
+        return;
+    }
+
+    char *content = line + 6;          // Pointer to content skipping "EMAIL "
+    trim_whitespace(content);          // remove whitespaces in contents of email
+    
+    if (strlen(content) == 0) {        // Secondary safety check for empty content
+        fprintf(stderr, "Error: EMAIL command supplied with zero parameters.\n");
+        return;
+    }
+    
+    char *cat_ptr = strtok(content, ","); // Extract category up to first comma
+    char *subj_ptr = strtok(NULL, ",");   // Extract subject up to second comma
+    char *date_ptr = strtok(NULL, "");    // Extract date (the remainder of the line)
+
+    if (cat_ptr && subj_ptr && date_ptr) { // Verify all three parts exist
+        Email new_email;                   // Declare a new email struct
+        strcpy(new_email.category, cat_ptr); // Copy parsed category
+        strcpy(new_email.subject, subj_ptr); // Copy parsed subject
+        strcpy(new_email.date, date_ptr);    // Copy parsed date
+
+        trim_whitespace(new_email.category); // Clean parsed category whitespace
+        trim_whitespace(new_email.subject);  // Clean parsed subject whitespace
+        trim_whitespace(new_email.date);     // Clean parsed date whitespace
+
+        // --- THE FIX ---                                             
+        // Check if any fields resulted in an empty string after trimming (e.g. missing text between commas)
+        if (strlen(new_email.category) == 0 || 
+            strlen(new_email.subject) == 0 || 
+            strlen(new_email.date) == 0) {
+            fprintf(stderr, "Error: EMAIL command has empty parameters. Expected format: EMAIL Category, Subject, Date\n");
+            return;
+        }
+
+        new_email.priority = get_category_priority(new_email.category); // Derive priority value
+        new_email.date_val = parse_date(new_email.date);                // Derive sortable date
+
+        insert(heap, new_email); // Insert fully processed email into heap
+    } else {
+        fprintf(stderr, "Error: EMAIL command is missing required parameters. Expected format: EMAIL Category, Subject, Date\n");
+    }
+}
+
 // Main execution loop
 int main() {
     MaxHeap heap;             // Declare the heap variable
@@ -153,37 +206,12 @@ int main() {
     char line[512];           // Buffer to store standard input strings
 
     while (fgets(line, sizeof(line), stdin)) { // Continuously read lines from standard input
-        trim_whitespace(line);                 // Clean any leading/trailing whitespace
-        if (strlen(line) == 0) continue;       // Skip empty lines
 
-        if (strncmp(line, "EMAIL ", 6) == 0) { // Command check: EMAIL
-            char *content = line + 6;          // Pointer to content skipping "EMAIL "
-            trim_whitespace(content);          // remove whitespaces in contents of email
-            
-            if (strlen(content) == 0) {        // check if content is empty
-                fprintf(stderr, "Error: EMAIL command supplied with zero parameters.\n");   // print the error message to user
-                continue;                      // then continue to run the loop
-            }
-            
-            char *cat_ptr = strtok(content, ","); // Extract category up to first comma
-            char *subj_ptr = strtok(NULL, ",");   // Extract subject up to second comma
-            char *date_ptr = strtok(NULL, "");    // Extract date (the remainder of the line)
+        // Strip the trailing newline (\n or \r\n) from fgets to ensure exact string matching works smoothly
+        line[strcspn(line, "\r\n")] = '\0';
 
-            if (cat_ptr && subj_ptr && date_ptr) { // Verify all three parts exist
-                Email new_email;                   // Declare a new email struct
-                strcpy(new_email.category, cat_ptr); // Copy parsed category
-                strcpy(new_email.subject, subj_ptr); // Copy parsed subject
-                strcpy(new_email.date, date_ptr);    // Copy parsed date
-
-                trim_whitespace(new_email.category); // Clean parsed category whitespace
-                trim_whitespace(new_email.subject);  // Clean parsed subject whitespace
-                trim_whitespace(new_email.date);     // Clean parsed date whitespace
-
-                new_email.priority = get_category_priority(new_email.category); // Derive priority value
-                new_email.date_val = parse_date(new_email.date);                // Derive sortable date
-
-                insert(&heap, new_email); // Insert fully processed email into heap
-            }
+        if (strncmp(line, "EMAIL", 5) == 0) {  // Command check: starts with "EMAIL"
+            process_email_command(&heap, line);
         } else if (strcmp(line, "NEXT") == 0) { // Command check: NEXT
             if (heap.size > 0) {                // Ensure the heap is not empty
                 Email top = heap.list[0];       // Peek at the root element
